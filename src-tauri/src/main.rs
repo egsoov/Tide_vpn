@@ -421,7 +421,7 @@ fn main() {
             let state = handle.state::<AppState>();
             if let Ok(mut core) = state.0.lock() {
                 stop_core(handle, &mut core);
-            }
+            };
         }
         #[cfg(target_os = "macos")]
         RunEvent::Reopen { .. } => show_main(handle),
