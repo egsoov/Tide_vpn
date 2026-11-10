@@ -1,0 +1,6 @@
+node_modules/
+.tools/
+src-tauri/target/
+src-tauri/gen/
+src-tauri/binaries/sing-box-*
+.DS_Store
