@@ -14,12 +14,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # обе версии для Mac собираются на Intel-машине: машин с M1 у GitHub часто не хватает
           - os: macos-15-intel
             target: aarch64-apple-darwin
+            arch: aarch64
+            bundles: app
           - os: macos-15-intel
             target: x86_64-apple-darwin
+            arch: x64
+            bundles: app
           - os: windows-2022
             target: x86_64-pc-windows-msvc
+            arch: x64
+            bundles: nsis
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -34,12 +41,28 @@ jobs:
         run: bash scripts/get-singbox.sh ${{ matrix.target }}
       - run: npm install --no-audit --no-fund
       - name: Сборка
-        run: npx tauri build --target ${{ matrix.target }}
+        run: npx tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+      - name: Образ .dmg
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          APP="src-tauri/target/${{ matrix.target }}/release/bundle/macos/tide.app"
+          VER=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          codesign --force --deep -s - "$APP"
+          mkdir -p dmg/root
+          cp -R "$APP" dmg/root/
+          ln -s /Applications dmg/root/Applications
+          for i in 1 2 3 4 5; do
+            hdiutil create -volname tide -srcfolder dmg/root -ov -format UDZO "dmg/tide_${VER}_${{ matrix.arch }}.dmg" && break
+            echo "Повтор через 15 секунд…"; sleep 15
+          done
+          ls -la dmg/*.dmg
       - uses: actions/upload-artifact@v4
         with:
           name: tide-${{ matrix.target }}
+          if-no-files-found: error
           path: |
-            src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            dmg/*.dmg
             src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
 
   release:
