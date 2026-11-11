@@ -14,7 +14,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # обе версии для Mac собираются на Intel-машине: машин с M1 у GitHub часто не хватает
           - os: macos-15-intel
             target: aarch64-apple-darwin
             arch: aarch64
@@ -54,7 +53,7 @@ jobs:
           ln -s /Applications dmg/root/Applications
           for i in 1 2 3 4 5; do
             hdiutil create -volname tide -srcfolder dmg/root -ov -format UDZO "dmg/tide_${VER}_${{ matrix.arch }}.dmg" && break
-            echo "Повтор через 15 секунд…"; sleep 15
+            echo "Повтор через 15 секунд"; sleep 15
           done
           ls -la dmg/*.dmg
       - uses: actions/upload-artifact@v4
@@ -77,5 +76,7 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: |
+            dist/**/*.dmg
+            dist/**/*.exe
           body_path: RELEASE.md
